@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>리그오브레전드 데이터베이스</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <script
+    type="text/javascript"
+    src="//cdnjs.cloudflare.com/ajax/libs/vue/2.2.1/vue.js"
+    
+  ></script>
+
+    <link rel="stylesheet" type="text/css" href="/css/result-light.css">
+
+      <script type="text/javascript" src="https://unpkg.com/axios/dist/axios.min.js"></script>
+      <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+  <style type="text/css">
+    td {
+  text-align: center;
+  font-family: "돋움";
+  font-size: 10pt;
+  border: 1px solid;
+}
+
+.icon-layer {
+  border: 2px solid #000;
+  border-radius: 15px;
+  display: inline-block;
+  padding: 5px;
+  font-weight: bold;
+}
+
+.skill-layer {
+  border: 2px dashed #000;
+  border-radius: 15px;
+  display: inline-block;
+  padding: 5px;
+  font-weight: bold;
+}
+
+.image {
+  width: 40px;
+  height: 40px;
+}
+
+.image-large {
+  width: 52px;
+  height: 52px;
+}
+
+#click_layer {
+  border: 1px solid rgb(222, 223, 223);
+  background-color: #f7f7f7;
+  padding: 5px 10px;
+}
+
+groupLimit,
+stats {
+  color: #49784d;
+}
+
+unique,
+passive {
+  color: #f1d121;
+}
+
+  </style>
+  <!-- TODO: Missing CoffeeScript 2 -->
+
+  <script type="text/javascript">
+
+
+    window.onload=function(){
+      
+const app = new Vue({
+  el: '#app',
+  data: {
+    champions: [],
+    items: [],
+    summoners: [],
+    runes: [],
+    show: [false, false, false, false],
+  },
+  mounted() {
+    const version = '8.14.1'
+    const url = `https://ddragon.leagueoflegends.com/cdn`
+    const url_version = `${url}/${version}`
+
+    this.setChampInfo(url_version)
+    this.setItemInfo(url_version)
+    this.setSummonerSpell(url_version)
+    this.setRune(url, version)
+  },
+  methods: {
+    toggleShow(index) {
+      Vue.set(this.show, index, !this.show[index]);
+    },
+    SelectText(element) {
+      const doc = document;
+      if (doc.body.createTextRange) {
+        const range = document.body.createTextRange();
+        range.moveToElementText(element);
+        range.select();
+      } else if (window.getSelection) {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    },
+    copySrc(e) {
+      $(e.currentTarget).attr("contenteditable", true);
+      this.SelectText(e.currentTarget);
+      document.execCommand("copy");
+      window.getSelection().removeAllRanges();
+      $(e.currentTarget).removeAttr("contenteditable");
+      alert("image copied!");
+    },
+
+    setChampInfo(url) {
+      axios.get(`${url}/data/ko_KR/champion.json`).then(champlist_kor => {
+        for (const idx in champlist_kor.data.data) {
+          const champData = champlist_kor.data.data[idx]
+          const champId = champData.id
+          axios.get(`${url}/data/ko_KR/champion/${champId}.json`).then(champ_res => {
+            axios.get(`${url}/data/en_US/champion/${champId}.json`).then(champ_res_eng => {
+              const spellImg = []
+              const spellName = []
+              const spellName_eng = []
+
+              for (let i = 0; i < 4; i++) {
+                spellImg[i] = `${url}/img/spell/${champ_res.data.data[champId].spells[i].image.full}`
+                spellName[i] = champ_res.data.data[champId].spells[i].name
+                spellName_eng[i] = champ_res_eng.data.data[champId].spells[i].name
+              }
+
+              this.champions.push({
+                id: champId,
+                champImg: `${url}/img/champion/${champData.image.full}`,
+                name: champData.name,
+                name_eng: champ_res_eng.data.data[champId].name,
+                pImg: `${url}/img/passive/${champ_res.data.data[champId].passive.image.full}`,
+                pName: champ_res.data.data[champId].passive.name,
+                pName_eng: champ_res_eng.data.data[champId].passive.name,
+                spellImg: spellImg,
+                spellName: spellName,
+                spellName_eng: spellName_eng
+              })
+            })
+          })
+        }
+      })
+    },
+    setItemInfo(url) {
+      axios.get(`${url}/data/ko_KR/item.json`).then(itemlist_kor => {
+        axios.get(`${url}/data/en_US/item.json`).then(itemlist_eng => {
+          for (const idx in itemlist_kor.data.data) {
+            const item_data = itemlist_kor.data.data[idx]
+            this.items.push({
+              itemName: item_data.name,
+              itemName_eng: itemlist_eng.data.data[idx].name,
+              itemImg: `${url}/img/item/${item_data.image.full}`,
+              itemDesc: item_data.description,
+              itemCost: item_data.gold.total
+            })
+          }
+        })
+      })
+    },
+    setSummonerSpell(url) {
+      axios.get(`${url}/data/ko_KR/summoner.json`).then(summonerlist => {
+        for (const idx in summonerlist.data.data) {
+          const item = summonerlist.data.data[idx]
+          this.summoners.push({
+            summonerName: item.name,
+            summonerImage: `${url}/img/spell/${item.image.full}`,
+            summonerDesc: item.description,
+            summonerCool: item.cooldown[0]
+          })
+        }
+      })
+    },
+    setRune(url, version) {
+      let temp = [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+      axios.get(`${url}/${version}/data/ko_KR/runesReforged.json`).then(runelist_kor => {
+        axios.get(`${url}/${version}/data/en_US/runesReforged.json`).then(runelist_eng => {
+          for (const cate_idx in runelist_kor.data) {
+            for (const slot_idx in runelist_kor.data[cate_idx].slots) {
+              for (const rune_idx in runelist_kor.data[cate_idx].slots[slot_idx].runes) {
+
+                const data_kor = runelist_kor.data[cate_idx].slots[slot_idx].runes[rune_idx]
+                const data_eng = runelist_eng.data[cate_idx].slots[slot_idx].runes[rune_idx]
+
+                temp[cate_idx].push({
+                  runeName: data_kor.name,
+                  runeName_eng: data_eng.name,
+                  runeImg: `${url}/img/${data_kor.icon}`
+                })
+              }
+            }
+          }
+          this.runes = this.transpose(temp)
+        })
+      })
+    },
+    transpose(a) {
+
+      // Calculate the width and height of the Array
+      var w = a.length || 0;
+      var h = a[0] instanceof Array ? a[0].length : 0;
+
+      // In case it is a zero matrix, no transpose routine needed.
+      if (h === 0 || w === 0) {
+        return [];
+      }
+
+      /**
+       * @var {Number} i Counter
+       * @var {Number} j Counter
+       * @var {Array} t Transposed data is stored in this array.
+       */
+      var i, j, t = [];
+
+      // Loop through every item in the outer array (height)
+      for (i = 0; i < h; i++) {
+
+        // Insert a new row (array)
+        t[i] = [];
+
+        // Loop through every item per item in outer array (width)
+        for (j = 0; j < w; j++) {
+
+          // Save transposed data.
+          t[i][j] = a[j][i];
+        }
+      }
+
+      return t;
+    }
+  },
+})
+
+
+    }
+
+</script>
+
+</head>
+<body>
+  <div id="app">
+  <blockquote id="click_layer" @click.prevent="toggleShow(0)">
+    <center>챔피언</center>
+  </blockquote>
+  <div v-show="show[0]">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Champ</th>
+          <th scope="col">P</th>
+          <th scope="col">Q</th>
+          <th scope="col">W</th>
+          <th scope="col">E</th>
+          <th scope="col">R</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(champion, i) in champions" :key="i">
+          <td>
+            <div @click="copySrc($event)">
+              <div class="icon-layer"><img class="image-large" :src="champion.champImg"><br/>{{ champion.name }}</div>&nbsp;</div>{{ champion.name_eng }}</td>
+          <td>
+            <div @click="copySrc($event)">
+              <div class="skill-layer"><img class="image" :src="champion.pImg"><br/>{{ champion.pName }} (패시브)</div>&nbsp;</div>{{ champion.pName_eng }}</td>
+          <td>
+            <div @click="copySrc($event)">
+              <div class="skill-layer"><img class="image" :src="champion.spellImg[0]"><br/>{{ champion.spellName[0] }} (Q)</div>&nbsp;</div>{{ champion.spellName_eng[0] }}</td>
+          <td>
+            <div @click="copySrc($event)">
+              <div class="skill-layer"><img class="image" :src="champion.spellImg[1]"><br/>{{ champion.spellName[1] }} (W)</div>&nbsp;</div>{{ champion.spellName_eng[1] }}</td>
+          <td>
+            <div @click="copySrc($event)">
+              <div class="skill-layer"><img class="image" :src="champion.spellImg[2]"><br/>{{ champion.spellName[2] }} (E)</div>&nbsp;</div>{{ champion.spellName_eng[2] }}</td>
+          <td>
+            <div @click="copySrc($event)">
+              <div class="skill-layer"><img class="image" :src="champion.spellImg[3]"><br/>{{ champion.spellName[3] }} (R)</div>&nbsp;</div>{{ champion.spellName_eng[3] }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <blockquote id="click_layer" @click.prevent="toggleShow(1)">
+    <center>아이템</center>
+  </blockquote>
+  <div v-show="show[1]">
+    <table class="table">
+      <thead>
+        <th scope="col">Item</th>
+        <th scope="col">Desc</th>
+        <th scope="col">Cost</th>
+      </thead>
+
+      <tbody>
+        <tr v-for="(item, j) in items" :key="j">
+          <td>
+            <div @click="copySrc($event)">
+              <div class="icon-layer"><img class="image-large" :src="item.itemImg"><br/>{{ item.itemName }}</div>&nbsp;</div>{{ item.itemName_eng }}</td>
+          <td v-html="item.itemDesc"></td>
+          <td> {{ item.itemCost }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <blockquote id="click_layer" @click.prevent="toggleShow(2)">
+    <center>소환사 주문</center>
+  </blockquote>
+  <div v-show="show[2]">
+    <table class="table">
+      <thead>
+        <th scope="col">Spell</th>
+        <th scope="col">Desc</th>
+        <th scope="col">Cooldown</th>
+      </thead>
+
+      <tbody>
+        <tr v-for="(data, i) in summoners" :key="i">
+          <td>
+            <div @click="copySrc($event)">
+              <div class="icon-layer"><img class="image-large" :src="data.summonerImage"><br/>{{ data.summonerName }}</div>&nbsp;</div>
+          </td>
+          <td> {{ data.summonerDesc }}</td>
+          <td> {{ data.summonerCool }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <blockquote id="click_layer" @click.prevent="toggleShow(3)">
+    <center>룬</center>
+  </blockquote>
+  <div v-show="show[3]">
+    <table class="table">
+      <thead>
+        <th scope="col">지배</th>
+        <th scope="col">영감</th>
+        <th scope="col">정밀</th>
+        <th scope="col">결의</th>
+        <th scope="col">마법</th>
+      </thead>
+
+      <tbody>
+        <tr v-for="(data, i) in runes" :key="i">
+          <td v-for="(runeitem, j) in data" :key="j">
+            <div v-if="runeitem !== undefined">
+              <div @click="copySrc($event)">
+                <div class="icon-layer"><img class="image-large" :src="runeitem.runeImg"><br/>{{ runeitem.runeName }}</div>&nbsp;</div>{{ runeitem.runeName_eng }} </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+  
+  <script>
+    // tell the embed parent frame the height of the content
+    if (window.parent && window.parent.parent){
+      window.parent.parent.postMessage(["resultsFrame", {
+        height: document.body.getBoundingClientRect().height,
+        slug: "g7k9p0tz"
+      }], "*")
+    }
+  </script>
+</body>
+</html>
