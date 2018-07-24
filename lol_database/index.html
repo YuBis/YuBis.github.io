@@ -57,6 +57,7 @@
   border: 1px solid rgb(222, 223, 223);
   background-color: #f7f7f7;
   padding: 5px 10px;
+  cursor: pointer;
 }
 
 groupLimit,
@@ -306,9 +307,9 @@ const app = new Vue({
   <div v-show="show[1]">
     <table class="table">
       <thead>
-        <th scope="col">Item</th>
-        <th scope="col">Desc</th>
-        <th scope="col">Cost</th>
+        <th scope="col">아이템</th>
+        <th scope="col">설명</th>
+        <th scope="col">비용</th>
       </thead>
 
       <tbody>
@@ -329,9 +330,9 @@ const app = new Vue({
   <div v-show="show[2]">
     <table class="table">
       <thead>
-        <th scope="col">Spell</th>
-        <th scope="col">Desc</th>
-        <th scope="col">Cooldown</th>
+        <th scope="col">소환사 주문</th>
+        <th scope="col">설명</th>
+        <th scope="col">재사용 대기시간</th>
       </thead>
 
       <tbody>
