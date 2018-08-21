@@ -28,16 +28,16 @@
 }
 
 .icon-layer {
-border-bottom: 1px solid #B09C87;
+  border-bottom: 3px ridge #a0a0a0;
   display: inline-block;
-	padding-left: 10px;
-	padding-right: 10px;
-	line-height: 150%;
+  padding-left: 10px;
+  padding-right: 10px;
+  line-height: 150%;
   font-weight: bold;
 }
 
 .skill-layer {
-  border-bottom: 1px solid #B09C87;
+  border: 1px solid #b2b2b2;
   display: inline-block;
   padding: 5px;
   font-weight: bold;
@@ -88,7 +88,7 @@ const app = new Vue({
     show: [false, false, false, false],
   },
   mounted() {
-    const version = '8.15.1'
+    const version = '8.16.1'
     const url = `https://ddragon.leagueoflegends.com/cdn`
     const url_version = `${url}/${version}`
 
