@@ -1,0 +1,14 @@
+{
+  "sylas": ["sylase2"],
+  "aatrox": ["aatrox_q2","aatrox_q3"],
+  "gnar": ["gnarbig_q","gnarbig_w","gnarbig_e","gnarbig_r"],
+  "elise": ["elisespiderq","elisespiderw","elisespidere"],
+  "jayce": ["jayce_hextechcapacitor_cannon","jayce_shotblast","jayce_accelerationgate","jayce_hypercharge","jayce_transformhammer"],
+  "khazix": ["khazix_q_red","khazix_w_red","khazix_e_red","khazix_r_red"],
+  "leesin": ["blindmonkqtwo","blindmonkwtwo","blindmonketwo"],
+  "nidalee": ["nidalee_q2","nidalee_w2","nidalee_e2","nidalee_r2"],
+  "reksai": ["reksai_q2","reksai_w2","reksai_e2"],
+  "rengar": ["rengarqemp","rengar_w_emp","renger_e_emp"],
+  "kayn": ["kayn_passive_ass","kayn_passive_slay","kayn_q_ass","kayn_q_slay","kayn_w_ass","kayn_w_slay","kayn_e_ass","kayn_e_slay","kayn_r1_slay","kayn_r2_primary","kayn_r2_ass","kayn_r2_slay"],
+  "akali": ["akali_e2", "akali_r2"]
+}
