@@ -88,16 +88,24 @@ const app = new Vue({
     show: [true, false, false, false],
   },
   mounted() {
-    const version = '10.19.1'
-    const url = `https://ddragon.leagueoflegends.com/cdn`
-    const url_version = `${url}/${version}`
+    this.getLatestVersion().then(version => {
+      const url = `https://ddragon.leagueoflegends.com/cdn`
+      const url_version = `${url}/${version}`
 
-    this.setChampInfo(url_version)
-    this.setItemInfo(url_version)
-    this.setSummonerSpell(url_version)
-    this.setRune(url, version)
+      this.setChampInfo(url_version)
+      this.setItemInfo(url_version)
+      this.setSummonerSpell(url_version)
+      this.setRune(url, version)
+    })
+  },
+  computed: {
+  	
   },
   methods: {
+  	getLatestVersion : async function() {
+    	return await axios.get(`https://ddragon.leagueoflegends.com/api/versions.json`)
+      .then( version_list => version_list.data[0] )
+    },
     toggleShow(index) {
       Vue.set(this.show, index, !this.show[index]);
     },
@@ -123,7 +131,6 @@ const app = new Vue({
       $(e.currentTarget).removeAttr("contenteditable");
       alert("image copied!");
     },
-
     setChampInfo(url) {
       axios.get(`${url}/data/ko_KR/champion.json`).then(champlist_kor => {
         for (const idx in champlist_kor.data.data) {
