@@ -136,6 +136,12 @@ const app = new Vue({
         for (const idx in champlist_kor.data.data) {
           const champData = champlist_kor.data.data[idx]
           const champId = champData.id
+          
+          this.champions.push({
+          	id: champId,
+          	isLoaded: false
+          })
+          
           axios.get(`${url}/data/ko_KR/champion/${champId}.json`).then(champ_res => {
             axios.get(`${url}/data/en_US/champion/${champId}.json`).then(champ_res_eng => {
               const spellImg = []
@@ -148,18 +154,21 @@ const app = new Vue({
                 spellName_eng[i] = champ_res_eng.data.data[champId].spells[i].name
               }
 
-              this.champions.push({
-                id: champId,
-                champImg: `${url}/img/champion/${champData.image.full}`,
-                name: champData.name,
-                name_eng: champ_res_eng.data.data[champId].name,
-                pImg: `${url}/img/passive/${champ_res.data.data[champId].passive.image.full}`,
-                pName: champ_res.data.data[champId].passive.name,
-                pName_eng: champ_res_eng.data.data[champId].passive.name,
-                spellImg: spellImg,
-                spellName: spellName,
-                spellName_eng: spellName_eng
+              this.champions.find(champ => {
+              	if (champ.id === champId) {
+                	champ.champImg = `${url}/img/champion/${champData.image.full}`
+                	champ.name = champData.name
+                	champ.name_eng = champ_res_eng.data.data[champId].name
+                	champ.pImg = `${url}/img/passive/${champ_res.data.data[champId].passive.image.full}`
+                	champ.pName = champ_res.data.data[champId].passive.name
+                	champ.pName_eng = champ_res_eng.data.data[champId].passive.name
+                	champ.spellImg = spellImg
+                	champ.spellName = spellName
+                	champ.spellName_eng = spellName_eng
+                  champ.isLoaded = true
+                }
               })
+              
             })
           })
         }
@@ -284,7 +293,7 @@ const app = new Vue({
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(champion, i) in champions" :key="i">
+        <tr v-for="(champion, i) in champions" :key="i" v-if="champion.isLoaded">
           <td>
             <div @click="copySrc($event)">
               <div class="icon-layer"><img class="image-large" :src="champion.champImg"><br/>{{ champion.name }}</div>&nbsp;</div>{{ champion.name_eng }}</td>
