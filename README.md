@@ -1,7 +1,6 @@
 # YuBis LoL Projects
 
-## 1) Live LoL Esports
-링크: https://yubis.github.io/live-lol-esports/
+## 1) <a href="https://yubis.github.io/live-lol-esports"> Live LoL Esports </a>
 
 프로 경기 중계 화면을 실시간으로 모니터링하는 웹 프로젝트입니다.
 
@@ -18,8 +17,7 @@
 - LoL Esports LiveStats API
 - GitHub Pages 배포
 
-## 2) LoL Database
-링크: https://yubis.github.io/lol_database/
+## 2) <a href="https://yubis.github.io/lol_database"> LoL Database </a>
 
 Data Dragon 기준으로 LoL 정적 데이터를 한 화면에서 조회/복사하기 쉽게 만든 데이터 페이지입니다.
 
