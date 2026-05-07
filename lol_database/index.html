@@ -1,404 +1,117 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="ko">
 <head>
-  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-  <title>리그오브레전드 데이터베이스</title>
-  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-  <meta name="robots" content="noindex, nofollow">
-  <meta name="googlebot" content="noindex, nofollow">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-
-  <script
-    type="text/javascript"
-    src="//cdnjs.cloudflare.com/ajax/libs/vue/2.2.1/vue.js"
-    
-  ></script>
-
-    <link rel="stylesheet" type="text/css" href="/css/result-light.css">
-
-      <script type="text/javascript" src="https://unpkg.com/axios/dist/axios.min.js"></script>
-      <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
-  <style type="text/css">
-    td {
-  text-align: center;
-  font-family: "돋움";
-  font-size: 10pt;
-  border: 1px solid #B09C87;
-}
-
-.icon-layer {
-  border-bottom: 3px ridge #a0a0a0;
-  display: inline-block;
-  padding-left: 10px;
-  padding-right: 10px;
-  line-height: 150%;
-  font-weight: bold;
-}
-
-.skill-layer {
-  border: 1px solid #b2b2b2;
-  display: inline-block;
-  padding: 5px;
-  font-weight: bold;
-}
-
-.image {
-  width: 40px;
-  height: 40px;
-}
-
-.image-large {
-  width: 52px;
-  height: 52px;
-}
-
-#click_layer {
-  border: 1px solid rgb(222, 223, 223);
-  background-color: #f7f7f7;
-  padding: 5px 10px;
-  cursor: pointer;
-}
-
-groupLimit,
-stats {
-  color: #49784d;
-}
-
-unique,
-passive {
-  color: #f1d121;
-}
-
-  </style>
-  <!-- TODO: Missing CoffeeScript 2 -->
-
-  <script type="text/javascript">
-
-
-    window.onload=function(){
-      
-const app = new Vue({
-  el: '#app',
-  data: {
-    champions: [],
-    items: [],
-    summoners: [],
-    runes: [],
-    show: [true, false, false, false],
-  },
-  mounted() {
-    this.getLatestVersion().then(version => {
-      const url = `https://ddragon.leagueoflegends.com/cdn`
-      const url_version = `${url}/${version}`
-
-      this.setChampInfo(url_version)
-      this.setItemInfo(url_version)
-      this.setSummonerSpell(url_version)
-      this.setRune(url, version)
-    })
-  },
-  computed: {
-  	
-  },
-  methods: {
-  	getLatestVersion : async function() {
-    	return await axios.get(`https://ddragon.leagueoflegends.com/api/versions.json`)
-      .then( version_list => version_list.data[0] )
-    },
-    toggleShow(index) {
-      Vue.set(this.show, index, !this.show[index]);
-    },
-    SelectText(element) {
-      const doc = document;
-      if (doc.body.createTextRange) {
-        const range = document.body.createTextRange();
-        range.moveToElementText(element);
-        range.select();
-      } else if (window.getSelection) {
-        const selection = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(element);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    },
-    copySrc(e) {
-      $(e.currentTarget).attr("contenteditable", true);
-      this.SelectText(e.currentTarget);
-      document.execCommand("copy");
-      window.getSelection().removeAllRanges();
-      $(e.currentTarget).removeAttr("contenteditable");
-      alert("image copied!");
-    },
-    setChampInfo(url) {
-      axios.get(`${url}/data/ko_KR/champion.json`).then(champlist_kor => {
-        for (const idx in champlist_kor.data.data) {
-          const champData = champlist_kor.data.data[idx]
-          const champId = champData.id
-          
-          this.champions.push({
-          	id: champId,
-          	isLoaded: false
-          })
-          
-          axios.get(`${url}/data/ko_KR/champion/${champId}.json`).then(champ_res => {
-            axios.get(`${url}/data/en_US/champion/${champId}.json`).then(champ_res_eng => {
-              const spellImg = []
-              const spellName = []
-              const spellName_eng = []
-
-              for (let i = 0; i < 4; i++) {
-                spellImg[i] = `${url}/img/spell/${champ_res.data.data[champId].spells[i].image.full}`
-                spellName[i] = champ_res.data.data[champId].spells[i].name
-                spellName_eng[i] = champ_res_eng.data.data[champId].spells[i].name
-              }
-
-              this.champions.find(champ => {
-              	if (champ.id === champId) {
-                	champ.champImg = `${url}/img/champion/${champData.image.full}`
-                	champ.name = champData.name
-                	champ.name_eng = champ_res_eng.data.data[champId].name
-                	champ.pImg = `${url}/img/passive/${champ_res.data.data[champId].passive.image.full}`
-                	champ.pName = champ_res.data.data[champId].passive.name
-                	champ.pName_eng = champ_res_eng.data.data[champId].passive.name
-                	champ.spellImg = spellImg
-                	champ.spellName = spellName
-                	champ.spellName_eng = spellName_eng
-                  champ.isLoaded = true
-                }
-              })
-              
-            })
-          })
-        }
-      })
-    },
-    setItemInfo(url) {
-      axios.get(`${url}/data/ko_KR/item.json`).then(itemlist_kor => {
-        axios.get(`${url}/data/en_US/item.json`).then(itemlist_eng => {
-          for (const idx in itemlist_kor.data.data) {
-            const item_data = itemlist_kor.data.data[idx]
-            this.items.push({
-              itemName: item_data.name,
-              itemName_eng: itemlist_eng.data.data[idx].name,
-              itemImg: `${url}/img/item/${item_data.image.full}`,
-              itemDesc: item_data.description,
-              itemCost: item_data.gold.total
-            })
-          }
-        })
-      })
-    },
-    setSummonerSpell(url) {
-      axios.get(`${url}/data/ko_KR/summoner.json`).then(summonerlist => {
-        for (const idx in summonerlist.data.data) {
-          const item = summonerlist.data.data[idx]
-          this.summoners.push({
-            summonerName: item.name,
-            summonerImage: `${url}/img/spell/${item.image.full}`,
-            summonerDesc: item.description,
-            summonerCool: item.cooldown[0]
-          })
-        }
-      })
-    },
-    setRune(url, version) {
-      let temp = [
-        [],
-        [],
-        [],
-        [],
-        []
-      ]
-      axios.get(`${url}/${version}/data/ko_KR/runesReforged.json`).then(runelist_kor => {
-        axios.get(`${url}/${version}/data/en_US/runesReforged.json`).then(runelist_eng => {
-          for (const cate_idx in runelist_kor.data) {
-            for (const slot_idx in runelist_kor.data[cate_idx].slots) {
-              for (const rune_idx in runelist_kor.data[cate_idx].slots[slot_idx].runes) {
-
-                const data_kor = runelist_kor.data[cate_idx].slots[slot_idx].runes[rune_idx]
-                const data_eng = runelist_eng.data[cate_idx].slots[slot_idx].runes[rune_idx]
-
-                temp[cate_idx].push({
-                  runeName: data_kor.name,
-                  runeName_eng: data_eng.name,
-                  runeImg: `${url}/img/${data_kor.icon}`
-                })
-              }
-            }
-          }
-          this.runes = this.transpose(temp)
-        })
-      })
-    },
-    transpose(a) {
-
-      // Calculate the width and height of the Array
-      var w = a.length || 0;
-      var h = a[0] instanceof Array ? a[0].length : 0;
-
-      // In case it is a zero matrix, no transpose routine needed.
-      if (h === 0 || w === 0) {
-        return [];
-      }
-
-      /**
-       * @var {Number} i Counter
-       * @var {Number} j Counter
-       * @var {Array} t Transposed data is stored in this array.
-       */
-      var i, j, t = [];
-
-      // Loop through every item in the outer array (height)
-      for (i = 0; i < h; i++) {
-
-        // Insert a new row (array)
-        t[i] = [];
-
-        // Loop through every item per item in outer array (width)
-        for (j = 0; j < w; j++) {
-
-          // Save transposed data.
-          t[i][j] = a[j][i];
-        }
-      }
-
-      return t;
-    }
-  },
-})
-
-
-    }
-
-</script>
-
+  <title>리그오브레전드 데이터 아틀라스</title>
+  <meta name="description" content="Riot Data Dragon 기반 챔피언/아이템/소환사 주문/룬 데이터 뷰어">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=Sora:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/main.css">
+  <script src="https://unpkg.com/vue@3.5.17/dist/vue.global.prod.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js" defer></script>
+  <script src="./assets/js/constants.js" defer></script>
+  <script src="./assets/js/helpers.js" defer></script>
+  <script src="./assets/js/data-service.js" defer></script>
+  <script src="./assets/js/components/section-tabs.js" defer></script>
+  <script src="./assets/js/components/champions-panel.js" defer></script>
+  <script src="./assets/js/components/items-panel.js" defer></script>
+  <script src="./assets/js/components/summoners-panel.js" defer></script>
+  <script src="./assets/js/components/runes-panel.js" defer></script>
+  <script src="./assets/js/app.js" defer></script>
 </head>
 <body>
-  <div id="app">
-  <blockquote id="click_layer" @click.prevent="toggleShow(0)">
-    <center>챔피언</center>
-  </blockquote>
-  <div v-show="show[0]">
-    <table class="table">
-      <thead>
-        <tr>
-          <th scope="col">Champ</th>
-          <th scope="col">P</th>
-          <th scope="col">Q</th>
-          <th scope="col">W</th>
-          <th scope="col">E</th>
-          <th scope="col">R</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(champion, i) in champions" :key="i" v-if="champion.isLoaded">
-          <td>
-            <div @click="copySrc($event)">
-              <div class="icon-layer"><img class="image-large" :src="champion.champImg"><br/>{{ champion.name }}</div>&nbsp;</div>{{ champion.name_eng }}</td>
-          <td>
-            <div @click="copySrc($event)">
-              <div class="skill-layer"><img class="image" :src="champion.pImg"><br/>{{ champion.pName }} (패시브)</div>&nbsp;</div>{{ champion.pName_eng }}</td>
-          <td>
-            <div @click="copySrc($event)">
-              <div class="skill-layer"><img class="image" :src="champion.spellImg[0]"><br/>{{ champion.spellName[0] }} (Q)</div>&nbsp;</div>{{ champion.spellName_eng[0] }}</td>
-          <td>
-            <div @click="copySrc($event)">
-              <div class="skill-layer"><img class="image" :src="champion.spellImg[1]"><br/>{{ champion.spellName[1] }} (W)</div>&nbsp;</div>{{ champion.spellName_eng[1] }}</td>
-          <td>
-            <div @click="copySrc($event)">
-              <div class="skill-layer"><img class="image" :src="champion.spellImg[2]"><br/>{{ champion.spellName[2] }} (E)</div>&nbsp;</div>{{ champion.spellName_eng[2] }}</td>
-          <td>
-            <div @click="copySrc($event)">
-              <div class="skill-layer"><img class="image" :src="champion.spellImg[3]"><br/>{{ champion.spellName[3] }} (R)</div>&nbsp;</div>{{ champion.spellName_eng[3] }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <div id="app" v-cloak>
+    <header class="hero">
+      <div class="hero-top">
+        <div class="title-wrap">
+          <h1 class="title">LoL Data Atlas</h1>
+          <p class="subtitle">Data Dragon 최신 패치 기반 챔피언, 아이템, 소환사 주문, 룬 데이터베이스</p>
+        </div>
+        <button class="reload-btn" @click="reloadAllData" :disabled="loading.global">
+          {{ loading.global ? "새로고침 중..." : "데이터 새로고침" }}
+        </button>
+      </div>
+
+      <div class="meta">
+        <span class="pill">Patch <strong>{{ patchVersion || "불러오는 중" }}</strong></span>
+        <span class="pill">최근 동기화 {{ lastLoadedAt || "-" }}</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">챔피언</span>
+          <span class="stat-value">{{ champions.length }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">아이템</span>
+          <span class="stat-value">{{ items.length }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">소환사 주문</span>
+          <span class="stat-value">{{ summoners.length }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">룬</span>
+          <span class="stat-value">{{ runeCount }}</span>
+        </div>
+      </div>
+
+      <div class="error-box" v-if="errors.length">
+        <strong>일부 데이터 로딩에 실패했습니다.</strong>
+        <div v-for="(err, idx) in errors" :key="idx">- {{ err.scope }}: {{ err.message }}</div>
+      </div>
+    </header>
+    <section-tabs
+      :active-section="activeSection"
+      :champion-count="filteredChampions.length"
+      :item-count="filteredItems.length"
+      :summoner-count="filteredSummoners.length"
+      :rune-count="filteredRuneCount"
+      @change="activeSection = $event"
+    ></section-tabs>
+
+    <champions-panel
+      :visible="activeSection === 'champions'"
+      :loading="loading.champions"
+      :search-query="search.champions"
+      :champions="filteredChampions"
+      :on-copy-asset="copyAsset"
+      @search-change="search.champions = $event"
+    ></champions-panel>
+
+    <items-panel
+      :visible="activeSection === 'items'"
+      :loading="loading.items"
+      :search-query="search.items"
+      :items="filteredItems"
+      :on-copy-asset="copyAsset"
+      @search-change="search.items = $event"
+    ></items-panel>
+
+    <summoners-panel
+      :visible="activeSection === 'summoners'"
+      :loading="loading.summoners"
+      :search-query="search.summoners"
+      :summoners="filteredSummoners"
+      :on-copy-asset="copyAsset"
+      @search-change="search.summoners = $event"
+    ></summoners-panel>
+
+    <runes-panel
+      :visible="activeSection === 'runes'"
+      :loading="loading.runes"
+      :search-query="search.runes"
+      :rune-paths="filteredRunePaths"
+      :on-copy-asset="copyAsset"
+      @search-change="search.runes = $event"
+    ></runes-panel>
+
+    <div class="toast" v-if="toast.visible" :class="toast.kind">{{ toast.message }}</div>
   </div>
 
-  <blockquote id="click_layer" @click.prevent="toggleShow(1)">
-    <center>아이템</center>
-  </blockquote>
-  <div v-show="show[1]">
-    <table class="table">
-      <thead>
-        <th scope="col">아이템</th>
-        <th scope="col">설명</th>
-        <th scope="col">비용</th>
-      </thead>
 
-      <tbody>
-        <tr v-for="(item, j) in items" :key="j">
-          <td>
-            <div @click="copySrc($event)">
-              <div class="icon-layer"><img class="image-large" :src="item.itemImg"><br/>{{ item.itemName }}</div>&nbsp;</div>{{ item.itemName_eng }}</td>
-          <td v-html="item.itemDesc"></td>
-          <td> {{ item.itemCost }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <blockquote id="click_layer" @click.prevent="toggleShow(2)">
-    <center>소환사 주문</center>
-  </blockquote>
-  <div v-show="show[2]">
-    <table class="table">
-      <thead>
-        <th scope="col">소환사 주문</th>
-        <th scope="col">설명</th>
-        <th scope="col">재사용 대기시간</th>
-      </thead>
-
-      <tbody>
-        <tr v-for="(data, i) in summoners" :key="i">
-          <td>
-            <div @click="copySrc($event)">
-              <div class="icon-layer"><img class="image-large" :src="data.summonerImage"><br/>{{ data.summonerName }}</div>&nbsp;</div>
-          </td>
-          <td> {{ data.summonerDesc }}</td>
-          <td> {{ data.summonerCool }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <blockquote id="click_layer" @click.prevent="toggleShow(3)">
-    <center>룬</center>
-  </blockquote>
-  <div v-show="show[3]">
-    <table class="table">
-      <thead>
-        <th scope="col">지배</th>
-        <th scope="col">영감</th>
-        <th scope="col">정밀</th>
-        <th scope="col">결의</th>
-        <th scope="col">마법</th>
-      </thead>
-
-      <tbody>
-        <tr v-for="(data, i) in runes" :key="i">
-          <td v-for="(runeitem, j) in data" :key="j">
-            <div v-if="runeitem !== undefined">
-              <div @click="copySrc($event)">
-                <div class="icon-layer"><img class="image-large" :src="runeitem.runeImg"><br/>{{ runeitem.runeName }}</div>&nbsp;</div>{{ runeitem.runeName_eng }} </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-  
-  <script>
-    // tell the embed parent frame the height of the content
-    if (window.parent && window.parent.parent){
-      window.parent.parent.postMessage(["resultsFrame", {
-        height: document.body.getBoundingClientRect().height,
-        slug: "g7k9p0tz"
-      }], "*")
-    }
-  </script>
 </body>
 </html>
+
