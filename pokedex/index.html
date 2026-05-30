@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>포켓덱스</title>
+    <link rel="stylesheet" href="./styles.css?v=20260530-forms-context" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="site-header">
+        <div class="title-lockup">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <p class="eyebrow">Pokédex</p>
+            <h1>포켓덱스</h1>
+          </div>
+        </div>
+
+        <div class="toolbar" aria-label="도감 보기와 필터">
+          <label class="select-field dex-field">
+            <span>도감</span>
+            <select id="pokedexSelect"></select>
+          </label>
+
+          <label class="search-field">
+            <span>검색</span>
+            <input id="searchInput" type="search" placeholder="이름 또는 번호" autocomplete="off" />
+          </label>
+
+          <div class="toggle-group" role="group" aria-label="수집 상태 필터">
+            <button class="filter-button is-active" type="button" data-status-filter="all" aria-pressed="true">
+              전체
+            </button>
+            <button class="filter-button" type="button" data-status-filter="collected" aria-pressed="false">
+              수집 완료
+            </button>
+            <button class="filter-button" type="button" data-status-filter="missing" aria-pressed="false">
+              미수집
+            </button>
+          </div>
+
+          <div class="toggle-group" role="group" aria-label="보기 모드">
+            <button class="mode-button is-active" type="button" data-view-mode="detail" aria-pressed="true">
+              자세히
+            </button>
+            <button class="mode-button" type="button" data-view-mode="compact" aria-pressed="false">
+              간단히
+            </button>
+          </div>
+
+          <button
+            class="filter-switch is-active"
+            type="button"
+            id="filterToggle"
+            role="switch"
+            aria-checked="true"
+            aria-label="타입과 지방 필터 사용"
+          >
+            <span class="filter-switch-label">필터</span>
+            <span class="filter-switch-track" aria-hidden="true">
+              <span class="filter-switch-thumb"></span>
+            </span>
+            <span class="filter-switch-state">ON</span>
+          </button>
+
+          <button class="export-button" type="button" id="openExport">
+            수집 내보내기
+          </button>
+
+          <div class="checkbox-filters" aria-label="타입과 지방 필터">
+            <section class="check-section" aria-labelledby="typeFilterTitle">
+              <div class="check-title" id="typeFilterTitle">타입</div>
+              <div class="check-grid" id="typeFilterGroup"></div>
+            </section>
+
+            <section class="check-section" aria-labelledby="regionFilterTitle">
+              <div class="check-title" id="regionFilterTitle">지방</div>
+              <div class="check-grid" id="regionFilterGroup"></div>
+            </section>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="status-row" aria-live="polite">
+          <p id="statusText">포켓몬 카드 목록을 준비하는 중입니다.</p>
+          <p id="summaryText">수집 0 / 표시 0</p>
+        </section>
+
+        <section class="pokedex-grid" id="pokedexGrid" aria-label="포켓몬 카드 목록"></section>
+
+        <section class="empty-state" id="emptyState" hidden>
+          <h2>표시할 포켓몬이 없습니다</h2>
+          <p>상단 필터 조건을 바꿔 주세요.</p>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="collection-dialog" id="collectionDialog">
+      <form method="dialog" class="dialog-panel">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Collection Sync</p>
+            <h2>수집 내보내기</h2>
+          </div>
+          <button class="icon-button" type="submit" aria-label="닫기">×</button>
+        </div>
+
+        <label class="field">
+          <span>수집 코드</span>
+          <textarea id="collectionCode" rows="4" readonly></textarea>
+        </label>
+
+        <div class="dialog-actions">
+          <button class="secondary-button" type="button" id="copyCodeButton">복사</button>
+        </div>
+
+        <label class="field">
+          <span>가져오기 코드</span>
+          <textarea id="importCode" rows="4" placeholder="수집 코드를 붙여넣기"></textarea>
+        </label>
+
+        <div class="dialog-actions">
+          <p id="importMessage" class="dialog-message" aria-live="polite"></p>
+          <button class="primary-button" type="button" id="importCodeButton">가져오기</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js?v=20260530-forms-context" defer></script>
+  </body>
+</html>
