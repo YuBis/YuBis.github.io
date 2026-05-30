@@ -175,6 +175,7 @@ const state = {
   searchQuery: "",
   statusFilter: "all",
   filtersEnabled: true,
+  showAllForms: false,
   typeFilters: new Set(),
   regionFilters: new Set(),
   viewMode: "detail",
@@ -195,6 +196,7 @@ const summaryText = document.querySelector("#summaryText");
 const emptyState = document.querySelector("#emptyState");
 const pokedexSelect = document.querySelector("#pokedexSelect");
 const searchInput = document.querySelector("#searchInput");
+const allFormsToggle = document.querySelector("#allFormsToggle");
 const filterToggle = document.querySelector("#filterToggle");
 const typeFilterGroup = document.querySelector("#typeFilterGroup");
 const regionFilterGroup = document.querySelector("#regionFilterGroup");
@@ -243,6 +245,12 @@ function bindEvents() {
       state.viewMode = button.dataset.viewMode;
       render();
     });
+  });
+
+  allFormsToggle.addEventListener("click", () => {
+    state.showAllForms = !state.showAllForms;
+    if (state.showAllForms) preloadAllForms();
+    render();
   });
 
   filterToggle.addEventListener("click", () => {
@@ -343,6 +351,7 @@ async function loadSelectedPokedex() {
   state.maxId = Math.max(state.maxId, ...state.pokemon.map((pokemon) => pokemon.id), state.pokemon.length);
   localStorage.setItem(STORAGE.maxId, String(state.maxId));
   preloadCollectedFormsForAll();
+  if (state.showAllForms) preloadAllForms();
 
   render();
   hydratePokemonDetails(token);
@@ -522,6 +531,7 @@ function mergePokemonDetail(detail) {
   if (!pokemon.detailDone) state.detailDoneCount += 1;
   Object.assign(pokemon, detail, { detailDone: true, failed: false });
   preloadCollectedForms(pokemon);
+  if (state.showAllForms) ensurePokemonForms(pokemon);
   updateCardAfterDetail(pokemon);
 }
 
@@ -626,6 +636,7 @@ function render() {
   searchInput.value = state.searchQuery;
   updateStatusButtons();
   updateModeButtons();
+  updateAllFormsToggle();
   updateFilterToggle();
   updateStatusText();
 
@@ -670,6 +681,10 @@ function renderPokemonCard(pokemon) {
   const image = pokemon.image
     ? `<img src="${escapeHtml(pokemon.image)}" alt="${escapeHtml(pokemon.name)} 이미지" loading="lazy" />`
     : `<div class="image-fallback" aria-hidden="true"></div>`;
+  const compactMedia =
+    state.viewMode === "compact"
+      ? `<div class="compact-media">${renderCompactImage(pokemon.image, pokemon.name)}</div>`
+      : "";
   const forms = renderFormsPanel(pokemon);
 
   return `
@@ -680,6 +695,7 @@ function renderPokemonCard(pokemon) {
     >
       <div class="card-media">${image}</div>
       <div class="card-body">
+        ${compactMedia}
         <div class="card-topline">
           <div>
             <h2 class="pokemon-name">${escapeHtml(pokemon.name)}</h2>
@@ -720,6 +736,10 @@ function renderCollectedFormCard(item) {
   const image = form.image
     ? `<img src="${escapeHtml(form.image)}" alt="${escapeHtml(form.name)} 이미지" loading="lazy" />`
     : `<div class="image-fallback" aria-hidden="true"></div>`;
+  const compactMedia =
+    state.viewMode === "compact"
+      ? `<div class="compact-media">${renderCompactImage(form.image, form.name)}</div>`
+      : "";
 
   return `
     <article
@@ -730,6 +750,7 @@ function renderCollectedFormCard(item) {
     >
       <div class="card-media">${image}</div>
       <div class="card-body">
+        ${compactMedia}
         <div class="card-topline">
           <div>
             <h2 class="pokemon-name">${escapeHtml(form.name)}</h2>
@@ -765,6 +786,12 @@ function renderCollectedFormCard(item) {
 function renderVisibleItem(item) {
   if (item.kind === "form") return renderCollectedFormCard(item);
   return renderPokemonCard(item.pokemon);
+}
+
+function renderCompactImage(image, name) {
+  return image
+    ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(name)} 이미지" loading="lazy" />`
+    : `<span class="compact-image-fallback" aria-hidden="true"></span>`;
 }
 
 function renderDexNumber(pokemon) {
@@ -896,23 +923,40 @@ async function preloadCollectedForms(pokemon) {
   if (!hasCollectedForms(pokemon) || pokemon.formsLoaded || pokemon.formsLoading) return;
 
   pokemon.formNames = Array.from(new Set([...pokemon.formNames, ...getCollectedFormNamesForPokemon(pokemon)]));
+  ensurePokemonForms(pokemon);
+}
+
+function preloadCollectedFormsForAll() {
+  for (const pokemon of state.pokemon) {
+    preloadCollectedForms(pokemon);
+  }
+}
+
+function preloadAllForms() {
+  for (const pokemon of state.pokemon) {
+    ensurePokemonForms(pokemon);
+  }
+}
+
+async function ensurePokemonForms(pokemon) {
+  if (!pokemon.detailDone || pokemon.formsLoaded || pokemon.formsLoading) return;
+
+  const formNames = new Set([...(pokemon.formNames || []), ...getCollectedFormNamesForPokemon(pokemon)]);
+  pokemon.formNames = Array.from(formNames);
+
+  if (getOtherFormNames(pokemon).length < 1 && !hasCollectedForms(pokemon)) return;
+
   pokemon.formsLoading = true;
 
   try {
     pokemon.forms = await loadPokemonForms(pokemon);
     pokemon.formsLoaded = true;
   } catch (error) {
-    console.warn(`Failed to preload collected forms for ${pokemon.id}`, error);
+    console.warn(`Failed to load forms for ${pokemon.id}`, error);
   } finally {
     pokemon.formsLoading = false;
-    if (state.statusFilter === "collected") scheduleRender();
+    if (state.showAllForms || state.statusFilter === "collected") scheduleRender();
     if (pokemon.formsExpanded) replaceRenderedCard(pokemon);
-  }
-}
-
-function preloadCollectedFormsForAll() {
-  for (const pokemon of state.pokemon) {
-    preloadCollectedForms(pokemon);
   }
 }
 
@@ -1070,7 +1114,25 @@ function getVisibleItems() {
     return getCollectedVisibleItems();
   }
 
-  return state.pokemon.filter(matchesFilters).map((pokemon) => ({ kind: "pokemon", pokemon }));
+  const items = [];
+
+  for (const pokemon of state.pokemon) {
+    if (matchesFilters(pokemon)) {
+      items.push({ kind: "pokemon", pokemon });
+    }
+
+    if (!state.showAllForms || !pokemon.detailDone || getOtherFormNames(pokemon).length < 1) continue;
+
+    ensurePokemonForms(pokemon);
+
+    for (const form of getOtherForms(pokemon)) {
+      if (matchesFormFilters(form) && matchesFormSearch(form, pokemon)) {
+        items.push({ kind: "form", form, parent: pokemon });
+      }
+    }
+  }
+
+  return items;
 }
 
 function getCollectedVisibleItems() {
@@ -1107,16 +1169,20 @@ function matchesFilters(pokemon) {
 
 function matchesDataFilters(pokemon) {
   if (!state.filtersEnabled) return true;
-  if (state.typeFilters.size && !pokemon.types.some((type) => state.typeFilters.has(type))) return false;
-  if (state.regionFilters.size && !pokemon.regions.some((region) => state.regionFilters.has(region))) return false;
+  if (state.typeFilters.size && !includesAll(pokemon.types, state.typeFilters)) return false;
+  if (state.regionFilters.size && !includesAll(pokemon.regions, state.regionFilters)) return false;
   return true;
 }
 
 function matchesFormFilters(form) {
   if (!state.filtersEnabled) return true;
-  if (state.typeFilters.size && !form.types.some((type) => state.typeFilters.has(type))) return false;
-  if (state.regionFilters.size && !form.regions.some((region) => state.regionFilters.has(region))) return false;
+  if (state.typeFilters.size && !includesAll(form.types, state.typeFilters)) return false;
+  if (state.regionFilters.size && !includesAll(form.regions, state.regionFilters)) return false;
   return true;
+}
+
+function includesAll(values, requiredValues) {
+  return Array.from(requiredValues).every((value) => values.includes(value));
 }
 
 function matchesSearch(pokemon) {
@@ -1176,6 +1242,12 @@ function updateModeButtons() {
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-pressed", String(active));
   });
+}
+
+function updateAllFormsToggle() {
+  allFormsToggle.classList.toggle("is-active", state.showAllForms);
+  allFormsToggle.setAttribute("aria-checked", String(state.showAllForms));
+  allFormsToggle.querySelector(".filter-switch-state").textContent = state.showAllForms ? "ON" : "OFF";
 }
 
 function updateFilterToggle() {

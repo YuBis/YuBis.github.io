@@ -123,6 +123,16 @@ h1 {
   flex-wrap: wrap;
 }
 
+.view-switch-row {
+  display: flex;
+  order: 2;
+  flex: 0 0 100%;
+  width: 100%;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .toggle-group {
   display: inline-flex;
   gap: 4px;
@@ -268,7 +278,9 @@ h1 {
 .checkbox-filters {
   display: flex;
   align-items: stretch;
-  flex: 1 1 100%;
+  order: 3;
+  flex: 0 0 100%;
+  width: 100%;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -428,6 +440,20 @@ h1 {
   margin-bottom: 0;
 }
 
+.summary-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.summary-actions .export-button {
+  min-height: 38px;
+  padding: 0 14px;
+}
+
 .pokedex-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -476,6 +502,26 @@ h1 {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(248, 250, 252, 0.82)),
     radial-gradient(circle at 50% 42%, rgba(228, 67, 82, 0.13), transparent 62%);
+}
+
+.compact-media {
+  display: none;
+}
+
+.compact-media img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 10px rgba(24, 33, 51, 0.12));
+}
+
+.compact-image-fallback {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #ffffff 0 17%, rgba(102, 112, 132, 0.2) 18% 24%, transparent 25%),
+    linear-gradient(rgba(228, 67, 82, 0.12) 0 48%, rgba(102, 112, 132, 0.2) 48% 54%, #ffffff 54% 100%);
 }
 
 .form-result-card .collect-button {
@@ -760,16 +806,30 @@ h1 {
 
 .pokedex-grid.is-compact .card-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 46px;
+  grid-template-columns: 42px minmax(0, 1fr) 46px;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-height: 126px;
   padding: 16px;
 }
 
+.pokedex-grid.is-compact .compact-media {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: var(--radius);
+  background: #f8fafc;
+}
+
 .pokedex-grid.is-compact .card-topline {
+  min-width: 0;
   min-height: 0;
   margin-bottom: 0;
+}
+
+.pokedex-grid.is-compact .card-topline > div {
+  min-width: 0;
 }
 
 .pokedex-grid.is-compact .pokemon-name {
@@ -928,6 +988,7 @@ textarea:focus {
   .toolbar,
   .toggle-group,
   .checkbox-filters,
+  .view-switch-row,
   .search-field,
   .select-field {
     width: 100%;
@@ -962,14 +1023,21 @@ textarea:focus {
     flex-basis: 100%;
   }
 
-  .export-button {
-    width: 100%;
-  }
-
   .status-row {
     align-items: flex-start;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .summary-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+
+  .summary-actions .export-button {
+    width: auto;
+    flex: 0 0 auto;
   }
 
   .pokedex-grid {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>포켓덱스</title>
-    <link rel="stylesheet" href="./styles.css?v=20260530-forms-context" />
+    <link rel="stylesheet" href="./styles.css?v=20260530-compact-tools-2" />
   </head>
   <body>
     <div class="app-shell">
@@ -49,24 +49,37 @@
             </button>
           </div>
 
-          <button
-            class="filter-switch is-active"
-            type="button"
-            id="filterToggle"
-            role="switch"
-            aria-checked="true"
-            aria-label="타입과 지방 필터 사용"
-          >
-            <span class="filter-switch-label">필터</span>
-            <span class="filter-switch-track" aria-hidden="true">
-              <span class="filter-switch-thumb"></span>
-            </span>
-            <span class="filter-switch-state">ON</span>
-          </button>
+          <div class="view-switch-row" aria-label="보기 옵션">
+            <button
+              class="filter-switch"
+              type="button"
+              id="allFormsToggle"
+              role="switch"
+              aria-checked="false"
+              aria-label="모든 폼 보기"
+            >
+              <span class="filter-switch-label">모든 폼</span>
+              <span class="filter-switch-track" aria-hidden="true">
+                <span class="filter-switch-thumb"></span>
+              </span>
+              <span class="filter-switch-state">OFF</span>
+            </button>
 
-          <button class="export-button" type="button" id="openExport">
-            수집 내보내기
-          </button>
+            <button
+              class="filter-switch is-active"
+              type="button"
+              id="filterToggle"
+              role="switch"
+              aria-checked="true"
+              aria-label="타입과 지방 필터 사용"
+            >
+              <span class="filter-switch-label">필터</span>
+              <span class="filter-switch-track" aria-hidden="true">
+                <span class="filter-switch-thumb"></span>
+              </span>
+              <span class="filter-switch-state">ON</span>
+            </button>
+          </div>
 
           <div class="checkbox-filters" aria-label="타입과 지방 필터">
             <section class="check-section" aria-labelledby="typeFilterTitle">
@@ -85,7 +98,12 @@
       <main>
         <section class="status-row" aria-live="polite">
           <p id="statusText">포켓몬 카드 목록을 준비하는 중입니다.</p>
-          <p id="summaryText">수집 0 / 표시 0</p>
+          <div class="summary-actions">
+            <p id="summaryText">수집 0 / 표시 0</p>
+            <button class="export-button" type="button" id="openExport">
+              수집 내보내기
+            </button>
+          </div>
         </section>
 
         <section class="pokedex-grid" id="pokedexGrid" aria-label="포켓몬 카드 목록"></section>
@@ -128,6 +146,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=20260530-forms-context" defer></script>
+    <script src="./app.js?v=20260530-compact-tools-2" defer></script>
   </body>
 </html>
