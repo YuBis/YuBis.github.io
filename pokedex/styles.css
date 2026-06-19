@@ -462,37 +462,108 @@ h1 {
 
 .pokemon-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 420px;
+  min-height: 342px;
   min-width: 0;
   overflow: hidden;
   border: 1px solid rgba(220, 227, 238, 0.9);
   border-radius: var(--radius);
   background: var(--panel);
   box-shadow: var(--card-shadow);
+  cursor: pointer;
+  perspective: 1400px;
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .pokemon-card::before {
   content: "";
   position: absolute;
+  z-index: 3;
   inset: 0 0 auto;
   height: 5px;
   background: linear-gradient(90deg, var(--card-accent, var(--accent)), rgba(255, 255, 255, 0));
 }
 
+.pokemon-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(45, 58, 82, 0.15);
+}
+
+.pokemon-card.is-flipped {
+  grid-column: span 2;
+  min-height: 540px;
+  z-index: 2;
+}
+
+.pokemon-card.is-card-highlighted {
+  animation: card-highlight 1800ms ease;
+}
+
+.card-flip {
+  position: relative;
+  display: grid;
+  min-height: inherit;
+  transform-style: preserve-3d;
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.pokemon-card.is-flipped .card-flip {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: inherit;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--panel);
+  backface-visibility: hidden;
+}
+
+.card-front {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  overflow: auto;
+  transform: rotateY(180deg);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pokemon-card.is-flipped .card-front {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pokemon-card.is-flipped .card-back {
+  position: relative;
+  visibility: visible;
+  pointer-events: auto;
+}
+
 .card-media {
   display: grid;
   place-items: center;
-  height: 196px;
-  padding: 28px 22px 18px;
+  height: 178px;
+  padding: 26px 22px 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(248, 250, 252, 0.82)),
     radial-gradient(circle at 50% 42%, rgba(27, 141, 191, 0.13), transparent 62%);
 }
 
 .card-media img {
-  width: min(190px, 74%);
+  width: min(172px, 72%);
   aspect-ratio: 1;
   object-fit: contain;
   filter: drop-shadow(0 16px 16px rgba(24, 33, 51, 0.12));
@@ -509,15 +580,15 @@ h1 {
 }
 
 .compact-media img {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
   filter: drop-shadow(0 8px 10px rgba(24, 33, 51, 0.12));
 }
 
 .compact-image-fallback {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background:
     radial-gradient(circle at center, #ffffff 0 17%, rgba(102, 112, 132, 0.2) 18% 24%, transparent 25%),
@@ -535,13 +606,46 @@ h1 {
   padding: 18px 18px 18px;
 }
 
+.card-front-body {
+  gap: 12px;
+}
+
 .card-topline {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  min-height: 58px;
-  margin-bottom: 14px;
+  min-height: 54px;
+  margin-bottom: 0;
+}
+
+.card-back-header {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.card-back-media {
+  display: grid;
+  width: 92px;
+  height: 92px;
+  place-items: center;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(248, 250, 252, 0.86)),
+    radial-gradient(circle at 50% 45%, rgba(27, 141, 191, 0.13), transparent 62%);
+}
+
+.card-back-media img {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 12px rgba(24, 33, 51, 0.12));
+}
+
+.card-back-title {
+  min-width: 0;
 }
 
 .pokemon-id {
@@ -573,6 +677,14 @@ h1 {
 .card-details {
   display: flex;
   flex-direction: column;
+}
+
+.front-type-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
 }
 
 .badge-group {
@@ -647,6 +759,7 @@ h1 {
   color: #30394c;
   border: 1px solid var(--line);
   background: #ffffff;
+  cursor: pointer;
 }
 
 .collect-button.is-collected {
@@ -660,13 +773,15 @@ h1 {
   border-color: #ffffff;
 }
 
-.forms-block {
+.forms-block,
+.evolution-block {
   display: grid;
   gap: 10px;
   margin: 0 0 14px;
 }
 
-.forms-toggle {
+.forms-toggle,
+.evolution-toggle {
   min-height: 36px;
   border: 1px solid rgba(220, 227, 238, 0.98);
   border-radius: var(--radius);
@@ -680,10 +795,111 @@ h1 {
     box-shadow 160ms ease;
 }
 
-.forms-toggle:hover {
+.forms-toggle:hover,
+.evolution-toggle:hover {
   transform: translateY(-1px);
   border-color: rgba(228, 67, 82, 0.42);
   box-shadow: 0 8px 16px rgba(45, 58, 82, 0.08);
+}
+
+.evolution-panel {
+  display: grid;
+  gap: 9px;
+}
+
+.evolution-stage {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid rgba(220, 227, 238, 0.98);
+  border-left: 4px solid var(--card-accent, var(--accent));
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.evolution-stage-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.evolution-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.evolution-species {
+  display: inline-grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 7px;
+  min-width: 132px;
+  max-width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #dde6f2;
+  border-radius: var(--radius);
+  color: inherit;
+  background: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.evolution-species.is-current {
+  border-color: rgba(228, 67, 82, 0.46);
+  background: var(--accent-soft);
+}
+
+.evolution-species:hover {
+  transform: translateY(-1px);
+  border-color: rgba(27, 141, 191, 0.38);
+  box-shadow: 0 8px 14px rgba(45, 58, 82, 0.08);
+}
+
+.evolution-image {
+  grid-row: 1 / span 2;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+}
+
+.evolution-image img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.evolution-image-fallback {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #dce3ee;
+}
+
+.evolution-name,
+.evolution-number {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evolution-name {
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.evolution-number {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 900;
 }
 
 .forms-panel {
@@ -795,34 +1011,41 @@ h1 {
 }
 
 .pokedex-grid.is-compact .pokemon-card {
+  cursor: pointer;
   min-height: 126px;
 }
 
 .pokedex-grid.is-compact .card-media,
 .pokedex-grid.is-compact .card-details,
-.pokedex-grid.is-compact .forms-block {
+.pokedex-grid.is-compact .forms-block,
+.pokedex-grid.is-compact .evolution-block {
   display: none;
 }
 
 .pokedex-grid.is-compact .card-body {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 46px;
+  grid-template-columns: 50px minmax(0, 1fr) 46px;
+  grid-template-rows: auto auto;
   align-items: center;
   gap: 10px;
-  min-height: 126px;
+  min-height: 136px;
   padding: 16px;
 }
 
 .pokedex-grid.is-compact .compact-media {
+  grid-column: 1;
+  grid-row: 1 / span 2;
   display: grid;
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   place-items: center;
   border-radius: var(--radius);
   background: #f8fafc;
 }
 
 .pokedex-grid.is-compact .card-topline {
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
   min-height: 0;
   margin-bottom: 0;
@@ -838,7 +1061,28 @@ h1 {
   white-space: nowrap;
 }
 
+.pokedex-grid.is-compact .front-type-row {
+  grid-column: 2;
+  grid-row: 2;
+  min-height: 24px;
+  gap: 5px;
+}
+
+.pokedex-grid.is-compact .front-type-row .type-badge {
+  min-height: 22px;
+  padding: 2px 6px;
+  font-size: 0.68rem;
+}
+
+.pokedex-grid.is-compact .front-type-row .badge-icon {
+  width: 14px;
+  height: 14px;
+  font-size: 0.55rem;
+}
+
 .pokedex-grid.is-compact .collect-button {
+  grid-column: 3;
+  grid-row: 1 / span 2;
   width: 46px;
   min-height: 46px;
   margin-top: 0;
@@ -851,6 +1095,62 @@ h1 {
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped {
+  grid-column: span 2;
+  min-height: 540px;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .card-media {
+  display: grid;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .card-details {
+  display: flex;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .forms-block {
+  display: grid;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .evolution-block {
+  display: grid;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: auto;
+  padding: 18px;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .card-topline {
+  align-items: flex-start;
+  min-height: 58px;
+  margin-bottom: 14px;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .pokemon-name {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .collect-button {
+  width: 100%;
+  min-height: 42px;
+  margin-top: auto;
+  padding: 0 13px;
+}
+
+.pokedex-grid.is-compact .pokemon-card.is-flipped .collect-label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
 }
 
 .empty-state {
@@ -1058,6 +1358,11 @@ textarea:focus {
 
   .pokedex-grid {
     grid-template-columns: 1fr;
+  }
+
+  .pokedex-grid.is-compact .pokemon-card.is-flipped,
+  .pokemon-card.is-flipped {
+    grid-column: 1 / -1;
   }
 
   .card-media {
