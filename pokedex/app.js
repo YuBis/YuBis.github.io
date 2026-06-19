@@ -195,10 +195,12 @@ const state = {
   highlightTimer: null,
   loadToken: 0,
   flippedCardKey: "",
+  overlayRenderSignature: "",
   highlightCardKey: "",
 };
 
 const grid = document.querySelector("#pokedexGrid");
+const cardOverlay = document.querySelector("#cardOverlay");
 const statusText = document.querySelector("#statusText");
 const summaryText = document.querySelector("#summaryText");
 const emptyState = document.querySelector("#emptyState");
@@ -278,34 +280,25 @@ function bindEvents() {
   });
 
   grid.addEventListener("click", (event) => {
-    const jumpButton = event.target.closest("[data-jump-pokemon-id]");
-    if (jumpButton) {
-      jumpToPokemon(Number(jumpButton.dataset.jumpPokemonId));
-      return;
-    }
+    if (handleCardAction(event)) return;
 
-    const evolutionButton = event.target.closest("[data-evolution-id]");
-    if (evolutionButton) {
-      toggleEvolution(Number(evolutionButton.dataset.evolutionId));
-      return;
-    }
-
-    const formButton = event.target.closest("[data-form-id]");
-    if (formButton) {
-      toggleForms(Number(formButton.dataset.formId));
-      return;
-    }
-
-    const button = event.target.closest("[data-collect-id]");
-    if (button) {
-      toggleCollected(button.dataset.collectId);
-      return;
-    }
-
-    const card = event.target.closest("[data-card-key]");
+    const card = closestEventTarget(event, "[data-card-key]");
     if (card) {
-      toggleFlippedCard(card.dataset.cardKey);
+      openCardOverlay(card.dataset.cardKey);
     }
+  });
+
+  cardOverlay.addEventListener("click", (event) => {
+    if (event.target === cardOverlay || closestEventTarget(event, "[data-overlay-close]")) {
+      closeCardOverlay();
+      return;
+    }
+
+    handleCardAction(event);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.flippedCardKey) closeCardOverlay();
   });
 
   document.querySelector("#openExport").addEventListener("click", () => {
@@ -317,6 +310,40 @@ function bindEvents() {
 
   document.querySelector("#copyCodeButton").addEventListener("click", copyExportCode);
   document.querySelector("#importCodeButton").addEventListener("click", importCollectionCode);
+}
+
+function handleCardAction(event) {
+    const jumpButton = closestEventTarget(event, "[data-jump-pokemon-id]");
+    if (jumpButton) {
+      jumpToPokemon(Number(jumpButton.dataset.jumpPokemonId));
+      return true;
+    }
+
+    const evolutionButton = closestEventTarget(event, "[data-evolution-id]");
+    if (evolutionButton) {
+      toggleEvolution(Number(evolutionButton.dataset.evolutionId));
+      return true;
+    }
+
+    const formButton = closestEventTarget(event, "[data-form-id]");
+    if (formButton) {
+      toggleForms(Number(formButton.dataset.formId));
+      return true;
+    }
+
+    const button = closestEventTarget(event, "[data-collect-id]");
+    if (button) {
+      toggleCollected(button.dataset.collectId);
+      return true;
+    }
+
+  return false;
+}
+
+function closestEventTarget(event, selector) {
+  const target = event.target;
+  const element = target instanceof Element ? target : target?.parentElement;
+  return element?.closest(selector) || null;
 }
 
 function populatePokedexOptions(names) {
@@ -768,6 +795,7 @@ function render() {
   grid.classList.toggle("is-compact", state.viewMode === "compact");
   grid.innerHTML = visibleItems.map(renderVisibleItem).join("");
   emptyState.hidden = visibleItems.length > 0 || !state.pokemon.length;
+  renderCardOverlay(visibleItems);
 
   pokedexSelect.value = state.dexName;
   searchInput.value = state.searchQuery;
@@ -819,25 +847,22 @@ function renderPokemonCard(pokemon) {
   const collectionKey = getSpeciesCollectionKey(pokemon);
   const cardKey = getPokemonCardKey(pokemon);
   const collected = state.collected.has(collectionKey);
-  const flipped = isCardFlipped(cardKey);
   const highlighted = state.highlightCardKey === cardKey;
   const image = pokemon.image
     ? `<img src="${escapeHtml(pokemon.image)}" alt="${escapeHtml(pokemon.name)} 이미지" loading="lazy" />`
     : `<div class="image-fallback" aria-hidden="true"></div>`;
   const compactMedia =
-    state.viewMode === "compact" && !flipped
+    state.viewMode === "compact"
       ? `<div class="compact-media">${renderCompactImage(pokemon.image, pokemon.name)}</div>`
       : "";
-  const forms = renderFormsPanel(pokemon);
-  const evolution = renderEvolutionPanel(pokemon);
   const collectButton = renderCollectButton(collectionKey, collected, pokemon.name);
 
   return `
     <article
-      class="pokemon-card ${pokemon.detailDone ? "" : "is-loading-detail"} ${flipped ? "is-flipped" : ""} ${highlighted ? "is-card-highlighted" : ""}"
+      class="pokemon-card ${pokemon.detailDone ? "" : "is-loading-detail"} ${highlighted ? "is-card-highlighted" : ""}"
       data-pokemon-id="${pokemon.id}"
       data-card-key="${escapeHtml(cardKey)}"
-      aria-expanded="${flipped}"
+      aria-expanded="false"
       style="--card-accent: ${escapeHtml(pokemon.accent)}"
     >
       <div class="card-flip">
@@ -859,29 +884,6 @@ function renderPokemonCard(pokemon) {
             ${collectButton}
           </div>
         </div>
-
-        <div class="card-face card-back">
-          <div class="card-back-header">
-            <div class="card-back-media">${image}</div>
-            <div class="card-back-title">
-              <h2 class="pokemon-name">${escapeHtml(pokemon.name)}</h2>
-              ${renderDexNumber(pokemon)}
-              <div class="front-type-row" aria-label="타입">
-                ${renderTypeBadges(pokemon)}
-              </div>
-            </div>
-          </div>
-
-          <div class="card-details">
-            <div class="badge-group" aria-label="포획 가능 지방">
-              ${renderRegionBadges(pokemon)}
-            </div>
-          </div>
-
-          ${forms}
-          ${evolution}
-          ${collectButton}
-        </div>
       </div>
     </article>
   `;
@@ -891,24 +893,23 @@ function renderCollectedFormCard(item) {
   const { form, parent } = item;
   const cardKey = getFormCardKey(form);
   const collected = state.collected.has(form.collectionKey);
-  const flipped = isCardFlipped(cardKey);
   const highlighted = state.highlightCardKey === cardKey;
   const image = form.image
     ? `<img src="${escapeHtml(form.image)}" alt="${escapeHtml(form.name)} 이미지" loading="lazy" />`
     : `<div class="image-fallback" aria-hidden="true"></div>`;
   const compactMedia =
-    state.viewMode === "compact" && !flipped
+    state.viewMode === "compact"
       ? `<div class="compact-media">${renderCompactImage(form.image, form.name)}</div>`
       : "";
   const collectButton = renderCollectButton(form.collectionKey, collected, form.name);
 
   return `
     <article
-      class="pokemon-card form-result-card ${flipped ? "is-flipped" : ""} ${highlighted ? "is-card-highlighted" : ""}"
+      class="pokemon-card form-result-card ${highlighted ? "is-card-highlighted" : ""}"
       data-pokemon-id="${parent.id}"
       data-form-key="${escapeHtml(form.collectionKey)}"
       data-card-key="${escapeHtml(cardKey)}"
-      aria-expanded="${flipped}"
+      aria-expanded="false"
       style="--card-accent: ${escapeHtml(form.accent)}"
     >
       <div class="card-flip">
@@ -930,27 +931,6 @@ function renderCollectedFormCard(item) {
             ${collectButton}
           </div>
         </div>
-
-        <div class="card-face card-back">
-          <div class="card-back-header">
-            <div class="card-back-media">${image}</div>
-            <div class="card-back-title">
-              <h2 class="pokemon-name">${escapeHtml(form.name)}</h2>
-              ${renderFormDexNumber(form, parent)}
-              <div class="front-type-row" aria-label="타입">
-                ${form.types.map(renderTypeBadge).join("")}
-              </div>
-            </div>
-          </div>
-
-          <div class="card-details">
-            <div class="badge-group" aria-label="포획 가능 지방">
-              ${form.regions.map(renderRegionBadge).join("")}
-            </div>
-          </div>
-
-          ${collectButton}
-        </div>
       </div>
     </article>
   `;
@@ -959,6 +939,225 @@ function renderCollectedFormCard(item) {
 function renderVisibleItem(item) {
   if (item.kind === "form") return renderCollectedFormCard(item);
   return renderPokemonCard(item.pokemon);
+}
+
+function renderCardOverlay(visibleItems = getVisibleItems()) {
+  if (!state.flippedCardKey) {
+    cardOverlay.hidden = true;
+    cardOverlay.innerHTML = "";
+    state.overlayRenderSignature = "";
+    delete cardOverlay.dataset.cardKey;
+    delete cardOverlay.dataset.renderSignature;
+    document.body.classList.remove("has-card-overlay");
+    return;
+  }
+
+  const item = visibleItems.find((candidate) => getVisibleItemCardKey(candidate) === state.flippedCardKey);
+  if (!item) {
+    state.flippedCardKey = "";
+    cardOverlay.hidden = true;
+    cardOverlay.innerHTML = "";
+    state.overlayRenderSignature = "";
+    delete cardOverlay.dataset.cardKey;
+    delete cardOverlay.dataset.renderSignature;
+    document.body.classList.remove("has-card-overlay");
+    return;
+  }
+
+  ensureOverlayDetails(item);
+  const renderSignature = getOverlayRenderSignature(item);
+  cardOverlay.hidden = false;
+  document.body.classList.add("has-card-overlay");
+
+  if (
+    cardOverlay.dataset.cardKey === state.flippedCardKey
+    && state.overlayRenderSignature === renderSignature
+  ) {
+    return;
+  }
+
+  state.overlayRenderSignature = renderSignature;
+  cardOverlay.dataset.cardKey = state.flippedCardKey;
+  cardOverlay.dataset.renderSignature = renderSignature;
+  cardOverlay.innerHTML = `
+    <div class="card-overlay-backdrop" data-overlay-close aria-hidden="true"></div>
+    <div class="card-overlay-panel" role="dialog" aria-modal="true" aria-label="포켓몬 상세 정보">
+      ${renderOverlayCard(item)}
+      ${renderOverlayCloseButton()}
+    </div>
+  `;
+}
+
+function renderOverlayCard(item) {
+  if (item.kind === "form") return renderOverlayFormCard(item);
+  return renderOverlayPokemonCard(item.pokemon);
+}
+
+function renderOverlayPokemonCard(pokemon) {
+  const collectionKey = getSpeciesCollectionKey(pokemon);
+  const collected = state.collected.has(collectionKey);
+  const image = pokemon.image
+    ? `<img src="${escapeHtml(pokemon.image)}" alt="${escapeHtml(pokemon.name)} 이미지" loading="lazy" />`
+    : `<div class="image-fallback" aria-hidden="true"></div>`;
+  const collectButton = renderCollectButton(collectionKey, collected, pokemon.name);
+
+  return `
+    <article
+      class="pokemon-card overlay-card overlay-detail-card is-flipped ${pokemon.detailDone ? "" : "is-loading-detail"}"
+      data-pokemon-id="${pokemon.id}"
+      data-card-key="${escapeHtml(getPokemonCardKey(pokemon))}"
+      aria-expanded="true"
+      style="--card-accent: ${escapeHtml(pokemon.accent)}"
+    >
+      <div class="overlay-detail-face">
+        <div class="card-back-header">
+          <div class="card-back-media">${image}</div>
+          <div class="card-back-title">
+            <h2 class="pokemon-name">${escapeHtml(pokemon.name)}</h2>
+            ${renderDexNumber(pokemon)}
+            <div class="front-type-row" aria-label="타입">
+              ${renderTypeBadges(pokemon)}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-details">
+          <div class="badge-group" aria-label="포획 가능 지방">
+            ${renderRegionBadges(pokemon)}
+          </div>
+        </div>
+
+        ${renderOverlayFormsPanel(pokemon)}
+        ${renderOverlayEvolutionPanel(pokemon)}
+        ${collectButton}
+      </div>
+    </article>
+  `;
+}
+
+function renderOverlayFormCard(item) {
+  const { form, parent } = item;
+  const collected = state.collected.has(form.collectionKey);
+  const image = form.image
+    ? `<img src="${escapeHtml(form.image)}" alt="${escapeHtml(form.name)} 이미지" loading="lazy" />`
+    : `<div class="image-fallback" aria-hidden="true"></div>`;
+  const collectButton = renderCollectButton(form.collectionKey, collected, form.name);
+
+  return `
+    <article
+      class="pokemon-card overlay-card overlay-detail-card form-result-card is-flipped"
+      data-pokemon-id="${parent.id}"
+      data-form-key="${escapeHtml(form.collectionKey)}"
+      data-card-key="${escapeHtml(getFormCardKey(form))}"
+      aria-expanded="true"
+      style="--card-accent: ${escapeHtml(form.accent)}"
+    >
+      <div class="overlay-detail-face">
+        <div class="card-back-header">
+          <div class="card-back-media">${image}</div>
+          <div class="card-back-title">
+            <h2 class="pokemon-name">${escapeHtml(form.name)}</h2>
+            ${renderFormDexNumber(form, parent)}
+            <div class="front-type-row" aria-label="타입">
+              ${form.types.map(renderTypeBadge).join("")}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-details">
+          <div class="badge-group" aria-label="포획 가능 지방">
+            ${form.regions.map(renderRegionBadge).join("")}
+          </div>
+        </div>
+
+        ${collectButton}
+      </div>
+    </article>
+  `;
+}
+
+function renderOverlayCloseButton() {
+  return `
+    <button class="overlay-close-button" type="button" data-overlay-close aria-label="상세 닫기">
+      ×
+    </button>
+  `;
+}
+
+function getVisibleItemCardKey(item) {
+  return item.kind === "form" ? getFormCardKey(item.form) : getPokemonCardKey(item.pokemon);
+}
+
+function getOverlayRenderSignature(item) {
+  if (item.kind === "form") {
+    const { form, parent } = item;
+    const context = form.dexContext || {
+      dexName: state.dexName,
+      dexNumber: parent.dexNumber,
+    };
+    return [
+      "form",
+      form.collectionKey,
+      form.name,
+      form.image,
+      form.types.join(","),
+      form.regions.join(","),
+      `${context.dexName}:${context.dexNumber}`,
+      state.collected.has(form.collectionKey),
+    ].join("|");
+  }
+
+  const pokemon = item.pokemon;
+  const collectionKey = getSpeciesCollectionKey(pokemon);
+  return [
+    "pokemon",
+    pokemon.id,
+    pokemon.name,
+    pokemon.image,
+    pokemon.detailDone,
+    pokemon.types.join(","),
+    pokemon.regions.join(","),
+    pokemon.formsLoading,
+    pokemon.formsLoaded,
+    getOverlayFormsSignature(pokemon),
+    pokemon.evolutionLoading,
+    pokemon.evolutionLoaded,
+    getOverlayEvolutionSignature(pokemon),
+    state.collected.has(collectionKey),
+  ].join("|");
+}
+
+function getOverlayFormsSignature(pokemon) {
+  if (!pokemon.detailDone || getOtherFormNames(pokemon).length < 1) return "none";
+  if (pokemon.formsLoading) return "loading";
+  if (!pokemon.formsLoaded) return "pending";
+  return getOtherForms(pokemon)
+    .map((form) => `${form.collectionKey}:${form.name}:${form.image}:${form.types.join(",")}:${state.collected.has(form.collectionKey)}`)
+    .join(";");
+}
+
+function getOverlayEvolutionSignature(pokemon) {
+  if (!pokemon.detailDone) return "none";
+  if (pokemon.evolutionLoading) return "loading";
+  if (!pokemon.evolutionLoaded) return "pending";
+  return pokemon.evolutions
+    .map((stage) => stage.map((entry) => `${entry.id}:${entry.speciesName}`).join(","))
+    .join(">");
+}
+
+function ensureOverlayDetails(item) {
+  if (item.kind === "form") return;
+
+  const pokemon = item.pokemon;
+  if (!pokemon.detailDone) return;
+
+  if (getOtherFormNames(pokemon).length > 0 && !pokemon.formsLoaded && !pokemon.formsLoading) {
+    ensurePokemonForms(pokemon);
+  }
+
+  if (!pokemon.evolutionLoaded && !pokemon.evolutionLoading) {
+    ensurePokemonEvolution(pokemon, { renderOnStart: false });
+  }
 }
 
 function renderCompactImage(image, name) {
@@ -990,12 +1189,13 @@ function getFormCardKey(form) {
   return form.collectionKey;
 }
 
-function isCardFlipped(cardKey) {
-  return state.flippedCardKey === cardKey;
+function openCardOverlay(cardKey) {
+  state.flippedCardKey = cardKey;
+  render();
 }
 
-function toggleFlippedCard(cardKey) {
-  state.flippedCardKey = state.flippedCardKey === cardKey ? "" : cardKey;
+function closeCardOverlay() {
+  state.flippedCardKey = "";
   render();
 }
 
@@ -1009,7 +1209,7 @@ function jumpToPokemon(id) {
     return;
   }
 
-  state.flippedCardKey = cardKey;
+  state.flippedCardKey = "";
   state.highlightCardKey = cardKey;
   render();
 
@@ -1064,6 +1264,39 @@ function renderTypeBadges(pokemon) {
 function renderRegionBadges(pokemon) {
   if (!pokemon.detailDone) return `<span class="placeholder-chip">지방 확인 중</span>`;
   return pokemon.regions.map(renderRegionBadge).join("");
+}
+
+function renderOverlayFormsPanel(pokemon) {
+  const otherFormCount = getOtherFormNames(pokemon).length;
+  if (!pokemon.detailDone || otherFormCount < 1) return "";
+
+  const content = pokemon.formsLoading || !pokemon.formsLoaded
+    ? `<span class="placeholder-chip">폼 정보 확인 중</span>`
+    : getOtherForms(pokemon).length
+      ? getOtherForms(pokemon).map(renderFormCard).join("")
+      : `<span class="placeholder-chip">다른 폼 정보 없음</span>`;
+
+  return `
+    <div class="forms-block overlay-info-block">
+      <span class="overlay-section-title">다른 폼</span>
+      <div class="forms-panel" aria-label="${escapeHtml(pokemon.name)} 폼 목록">
+        ${content}
+      </div>
+    </div>
+  `;
+}
+
+function renderOverlayEvolutionPanel(pokemon) {
+  if (!pokemon.detailDone) return "";
+
+  return `
+    <div class="evolution-block overlay-info-block">
+      <span class="overlay-section-title">진화 정보</span>
+      <div class="evolution-panel" aria-label="${escapeHtml(pokemon.name)} 진화 정보">
+        ${renderEvolutionContent(pokemon)}
+      </div>
+    </div>
+  `;
 }
 
 function renderEvolutionPanel(pokemon) {
@@ -1274,6 +1507,7 @@ async function ensurePokemonForms(pokemon) {
     pokemon.formsLoading = false;
     if (state.showAllForms || state.statusFilter === "collected") scheduleRender();
     if (pokemon.formsExpanded) replaceRenderedCard(pokemon);
+    if (state.flippedCardKey === getPokemonCardKey(pokemon)) replaceRenderedCard(pokemon);
   }
 }
 
@@ -1289,11 +1523,12 @@ function toggleEvolution(id) {
   replaceRenderedCard(pokemon);
 }
 
-async function ensurePokemonEvolution(pokemon) {
+async function ensurePokemonEvolution(pokemon, options = {}) {
   if (!pokemon.detailDone || pokemon.evolutionLoaded || pokemon.evolutionLoading) return;
 
+  const { renderOnStart = true } = options;
   pokemon.evolutionLoading = true;
-  replaceRenderedCard(pokemon);
+  if (renderOnStart) replaceRenderedCard(pokemon);
 
   try {
     pokemon.evolutions = await loadPokemonEvolution(pokemon);
@@ -1472,8 +1707,8 @@ function getFormDisplayName(baseName, speciesName, pokemonName) {
 
 function replaceRenderedCard(pokemon) {
   const card = grid.querySelector(`[data-pokemon-id="${pokemon.id}"]`);
-  if (!card) return;
-  card.outerHTML = renderPokemonCard(pokemon);
+  if (card) card.outerHTML = renderPokemonCard(pokemon);
+  renderCardOverlay();
 }
 
 function renderTypeBadge(type) {

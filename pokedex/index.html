@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>포켓덱스</title>
-    <link rel="stylesheet" href="./styles.css?v=20260618-flip-details" />
+    <link rel="stylesheet" href="./styles.css?v=20260619-overlay-auto-details" />
   </head>
   <body>
     <div class="app-shell">
@@ -108,6 +108,8 @@
 
         <section class="pokedex-grid" id="pokedexGrid" aria-label="포켓몬 카드 목록"></section>
 
+        <section class="card-overlay" id="cardOverlay" hidden></section>
+
         <section class="empty-state" id="emptyState" hidden>
           <h2>표시할 포켓몬이 없습니다</h2>
           <p>상단 필터 조건을 바꿔 주세요.</p>
@@ -146,6 +148,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=20260618-flip-details" defer></script>
+    <script src="./app.js?v=20260619-overlay-auto-details" defer></script>
   </body>
 </html>
